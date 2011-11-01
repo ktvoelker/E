@@ -1,0 +1,40 @@
+
+Grammar
+=======
+
+epsilon :=
+
+end := ';'
+
+name := sep_list_1(simple_name, '.')
+
+params := '(' sep_list(param, ',') ')' | epsilon
+
+param := simple_name (':' type)?
+
+type_def :=
+    'struct' name params '{' struct_elems '}' end
+  // The arguments are just for specifying the backing type of the enum or mask,
+  // but we can give better error messages by accepting any valid argument list at
+  // the syntactic level.
+  | ('enum' | 'mask') arguments name params '{' enum_elems '}' end
+
+struct_elems := sep_list_1(struct_elem, ',')
+
+struct_elem := simple_name ':' type ('=' expr)?
+
+enum_elem := simple_name ('=' expr)?
+
+
+// TODO
+
+// union type declarations
+
+// type and value expressions (including array types)
+
+// function definitions (with export option)
+
+// namespace definitions and import declarations
+
+// global and thread-local variable declarations (with export option)
+

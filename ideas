@@ -1,0 +1,47 @@
+
+QUESTION: what kind of distinction should be made between parameter kinds?
+  Static/dynamic? (Thus, values can be static parameters. Can types be dynamic?)
+  Type/value? (Thus, the compiler optimizes value parameters to be static.)
+  None (This is really the type/value distinction with a different syntax.)
+
+Struct subsetting: if struct A has a superset of the fields of struct B,
+then two operations are possible:
+
+  * Obtain (a : A) restricted to the fields of B, thus having type B
+  * Assign all the values of struct (b : B) into struct (a : A)
+
+No null: use an option type
+
+No subtyping: this simplifies things, especially in type parameterization
+(no covariance or contravariance) - you can still require an interface by
+putting non-nullable function values into a struct which refer to the type
+parameters.
+
+Separate mask and enum types
+
+Use a less ambiguous type syntax. Support anonymous functions, but
+only over variables explicitly declared as closed.
+- Hide quoted text -
+
+On Thu, Oct 20, 2011 at 2:21 PM, Karl Voelker <ktvoelker@gmail.com> wrote:
+> Enforce const completely. Support intelligent modular compilation (no
+> "import" needed to use something, just to import the names into your
+> namespace) and namespaces.
+>
+> Support type parameters. Make sure the system is good enough to allow
+> for units as type parameters of numeric types.
+>
+> On Tue, Oct 18, 2011 at 4:15 PM, Karl Voelker <ktvoelker@gmail.com> wrote:
+>> Statically-tagged unions. And dynamic? Might as well also allow
+>> dynamically-sized arrays, with appropriate safe-casting accessors.
+>> Here "dynamic" really means "unknown at compile time".
+>>
+>> On Tue, Oct 18, 2011 at 3:59 PM, Karl Voelker <ktvoelker@gmail.com> wrote:
+>>> No special array types, just pointer types.
+>>>
+>>> A pointer type always specifies how many sequential values are pointed-to.
+>>>
+>>> Special malloc returns length-typed array.
+>>>
+>>> Pointer arithmetic returns pointers with appropriately-altered types.
+
