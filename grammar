@@ -2,24 +2,22 @@
 Grammar
 =======
 
-epsilon :=
-
 end := ';'
 
 name := sep_list_1(simple_name, '.')
 
-params := '(' sep_list(param, ',') ')' | epsilon
+params := '(' sep_list(param, ',') ')'
 
 param := simple_name (':' type)?
 
 type_def :=
-    'struct' name params '{' struct_elems '}' end
+    'struct' name params? '{' struct_elems '}' end
   // Only one of the union_elems can have an initial value.
-  | 'union' name params '{' union_elems '}' end
+  | 'union' name params? '{' union_elems '}' end
   // The arguments are just for specifying the backing type of the enum or mask,
   // but we can give better error messages by accepting any valid argument list at
   // the syntactic level.
-  | ('enum' | 'mask') arguments name params '{' enum_elems '}' end
+  | ('enum' | 'mask') arguments? name params? '{' enum_elems '}' end
 
 struct_elems := sep_list_1(struct_elem, ',')
 
@@ -31,17 +29,69 @@ union_elem := simple_name ':' type ('=' expr)?
 
 enum_elem := simple_name ('=' expr)?
 
+type :=
+  // There are some special hard-wired names that can go here:
+  // array
+  // tag
+  // and all the primitive types
+    name arguments?
+  | params '=>' type
 
-// TODO
+expr :=
+    literal
+  // There are some special hard-wired names that can go here:
+  // length
+  // tag
+  | expr arguments?
+  // There are some special hard-wired binary operators:
+  // :=
+  | expr bin_op expr
 
-// type and value expressions (including array types)
-  
-  // Special expressions include:
-  // getting the tag type (an implicit enum) and tag value (an implicit large-enough integral) of a union
+arguments := '(' sep_list(expr, ',') ')'
 
-// function definitions (with export option)
+literal :=
+    primitive_literal
+  | 'new' name arguments?
+  | params ':' type '=>' fn_body
 
-// namespace definitions and import declarations
+fn_body := expr | block
 
-// global and thread-local variable declarations (with export option)
+block := '{' stmt* '}'
+
+stmt :=
+    expr end
+  | def
+  | 'var' simple_name '=' expr end
+  // The initial "with" expression is a predicate function applied to each test
+  // expression. By default, the identity function over Booleans is used.
+  | ('with' expr)? 'if' expr block ('elif' expr block)* ('else' block)?
+  | 'while' ('(' loop_var ')')? expr block ('next' block)?
+  | 'for' '(' loop_var 'in' expr ')' block ('next' block)?
+  | ('next' | 'done' | 'return') end
+  | 'decide' arguments '{' option* '}'
+
+option := '(' sep_list(expr | '_', ',') ')' '=>' (expr end | block)
+
+loop_var := simple_name ':' type '=' expr
+
+def := 'def' simple_name '=' (expr end | block)
+
+ns :=
+    file_ns
+  | block_ns
+
+file_ns := 'ns' simple_name end ns_elem* eof
+
+block_ns := 'ns' simple_name '{' ns_elem* '}'
+
+ns_elem :=
+    block_ns
+  | def_mod* def
+  | import
+
+def_mod :=
+    'export'
+  | 'global'
+
+import := 'import' (sep_list(simple_name, ','))? 'from' name end
 
