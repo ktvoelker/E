@@ -31,8 +31,9 @@ enum_elem := simple_name ('=' expr)?
 
 type :=
   // There are some special hard-wired names that can go here:
-  // array
-  // tag
+  // ptr (pointer, also used for arrays)
+  // const (like ptr, but read-only)
+  // tag (get tag type of union)
   // and all the primitive types
     name arguments?
   | params '=>' type
@@ -40,11 +41,23 @@ type :=
 expr :=
     literal
   // There are some special hard-wired names that can go here:
-  // length
-  // tag
+  // length (get length of array)
+  // tag (get tag value of union)
+  // ref (increment reference count)
+  // unref (decrement reference count)
+  // const (safe cast from ptr to const)
+  // cast (unsafe cast to any specified type)
   | expr arguments?
+  // There are some special hard-wired unary operators:
+  // * (dereference ptr or const)
+  | unary_op expr
   // There are some special hard-wired binary operators:
-  // :=
+  // && (short-circuit logical conjunction)
+  // || (short-circuit logical disjunction)
+  // == (structural equality over all types)
+  // != (structural inequality over all types)
+  // <, >, <=, >= (structural comparison over all types which don't contain pointers)
+  // <=> (structural comparison, as above, but returning a 3-valued-enum result)
   | expr bin_op expr
 
 arguments := '(' sep_list(expr, ',') ')'
@@ -61,11 +74,12 @@ block := '{' stmt* '}'
 stmt :=
     expr end
   | def
-  | 'var' simple_name '=' expr end
   // The initial "with" expression is a predicate function applied to each test
   // expression. By default, the identity function over Booleans is used.
   | ('with' expr)? 'if' expr block ('elif' expr block)* ('else' block)?
   | 'while' ('(' loop_var ')')? expr block ('next' block)?
+  // The for-each loop expression must be of a type for which all the necessary
+  // functions are defined to allow it to be used as an iterable thing.
   | 'for' '(' loop_var 'in' expr ')' block ('next' block)?
   | ('next' | 'done' | 'return') end
   | 'decide' arguments '{' option* '}'

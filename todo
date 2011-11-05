@@ -1,11 +1,4 @@
 
-Add support for unsafe operations to the grammar.
-
-  Along with this, provide more succinct syntax for pointer operations, including
-  safe ones. This will obviate the need for mutable local variables: you can define
-  a pointer to a memory cell instead. Make sure array access is unified under this
-  notion of pointers, as well.
-
 Translate the informal grammar into an ANTLR grammar.
 
   Challenges are:
