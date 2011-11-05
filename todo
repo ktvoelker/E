@@ -1,13 +1,5 @@
 
-Translate the informal grammar into an ANTLR grammar.
-
-  Challenges are:
-    
-    Figuring out how to translate sep_list and sep_list_1.
-
-    Fixing conflicts.
-
-    Adding a list of operators with precedences.
+Test and debug the ANTLR grammar.
 
 Make the ANTLR grammar produce a Java AST value.
 
