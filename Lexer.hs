@@ -1,6 +1,8 @@
 
-module Lexer where
+module Lexer (Token(..), tokenize) where
 
+import Data.Char
+import Data.Maybe
 import Text.ParserCombinators.Parsec
 
 data Token =
@@ -8,12 +10,27 @@ data Token =
   | TInt Integer
   | TFloat Double
   | TChar Char
+  | TString String
   | TOper String
+  deriving (Eq, Ord, Show)
 
-token = do
+tokenize :: SourceName -> String -> Either ParseError [Token]
+tokenize = parse file
+
+file :: Parser [Token]
+file = do
   spaces
-  ident <|> number <|> string <|> character <|> operator
+  xs <- many ptoken
+  eof
+  return xs
 
+ptoken :: Parser Token
+ptoken = do
+  t <- ident <|> number <|> qstring <|> character <|> operator
+  spaces
+  return t
+
+ident :: Parser Token
 ident = do
   x  <- lu
   xs <- many $ lu <|> digit
@@ -21,42 +38,55 @@ ident = do
   where
     lu = letter <|> char '_'
 
+number :: Parser Token
+number = digitStartNumber <|> dotStartNumber
+
+dotStartNumber :: Parser Token
 dotStartNumber = do
   char '.'
   fracStr <- many1 digit
+  exp     <- option 1 expPart
   let frac = read ('.' : fracStr) :: Double
-  return $ TFloat frac
+  return $ TFloat $ frac ** fromInteger exp
 
+digitStartNumber :: Parser Token
 digitStartNumber = do
   intStr  <- many1 digit
   fracStr <- optionMaybe $ char '.' >> many digit
-  exp     <- option 1 exponent
+  exp     <- option 1 expPart
   let int  = read intStr :: Integer
-  let frac = fmap read ('.' : fracStr) :: Maybe Double
+  let frac = fmap (read . ('.' :)) fracStr :: Maybe Double
   case frac of
     Nothing   -> return $ TInt $ int ^ exp
-    Just frac -> return $ TFloat $ (fromInteger int + frac) ** exp
+    Just frac -> return $ TFloat $ (fromInteger int + frac) ** fromInteger exp
 
-exponent = do
+expPart :: Parser Integer
+expPart = do
   oneOf ['e', 'E']
   sign   <- option '+' $ oneOf "+-"
   intStr <- many1 digit
-  let int = read intStr :: Integer
+  let int = read intStr
   return $ if sign == '+' then int else -int
 
+{-
+ -
 COMMENT
     :   '//' ~('\n'|'\r')* '\r'? '\n' {$channel=HIDDEN;}
     |   '/*' ( options {greedy=false;} : . )* '*/' {$channel=HIDDEN;}
     ;
+ -}
 
-string = do
+qstring :: Parser Token
+qstring = do
   char '"'
   xs <- many $ escape <|> noneOf "\\\""
   char '"'
   return $ TString xs
 
+escape :: Parser Char
 escape = normal_escape <|> unicode_escape
 
+normal_escapes :: [(Char, Char)]
 normal_escapes =
   [ ('b', '\b')
   , ('t', '\t')
@@ -68,17 +98,20 @@ normal_escapes =
   , ('\\', '\\')
   ]
 
+normal_escape :: Parser Char
 normal_escape = do
   char '\\'
   x <- oneOf "btnfr'\"\\"
   return $ fromJust $ lookup x normal_escapes
 
+character :: Parser Token
 character = do
   char '\''
   x <- escape <|> noneOf "'\\"
   char '\''
   return $ TChar x
 
+unicode_escape :: Parser Char
 unicode_escape = do
   char '\\'
   char 'u'
@@ -89,6 +122,7 @@ unicode_escape = do
   return $ chr $
     (((((hex_to_int a * 16) + hex_to_int b) * 16) + hex_to_int c) * 16) + hex_to_int d
 
+hex_to_int :: Char -> Int
 hex_to_int '0' = 0
 hex_to_int '1' = 1
 hex_to_int '2' = 2
@@ -112,6 +146,7 @@ hex_to_int 'D' = 13
 hex_to_int 'E' = 14
 hex_to_int 'F' = 15
 
+operator :: Parser Token
 operator = do
   xs <- many1 $ oneOf "~!@$%^&*-+=|/<>?"
   return $ TOper xs
