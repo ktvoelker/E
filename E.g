@@ -200,8 +200,13 @@ loop_var
 	:	simple_name ':' type '=' expr
 	;
 
-def : 'def' simple_name '=' (expr end | block)
-;
+def :	'def' simple_name def_tail
+	;
+
+def_tail
+	:	'=' (expr end | block)
+	|	params ':' type '=' (expr end | block)
+	;
 
 ns :
     file_ns

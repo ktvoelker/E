@@ -1,6 +1,4 @@
 
-Test and debug the ANTLR grammar.
-
 Make the ANTLR grammar produce a Java AST value.
 
 Get a primitive identity pass working in Scala linked against the compiled grammar.
