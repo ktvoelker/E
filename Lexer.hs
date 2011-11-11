@@ -7,34 +7,95 @@ import Text.ParserCombinators.Parsec
 
 data Token =
     TIdent String
+  | TKeyword String
   | TInt Integer
   | TFloat Double
   | TChar Char
   | TString String
   | TOper String
-  deriving (Eq, Ord, Show)
+  | TDot
+  | TComma
+  | TArrow
+  | TEquals
+  | TEnd
+  | TLParen
+  | TRParen
+  | TLBracket
+  | TRBracket
+  | TColon
+  deriving (Eq, Show)
 
-tokenize :: SourceName -> String -> Either ParseError [Token]
+tokenize :: SourceName -> String -> Either ParseError [(Token, SourcePos)]
 tokenize = parse file
 
-file :: Parser [Token]
+file :: Parser [(Token, SourcePos)]
 file = do
   spaces
   xs <- many ptoken
   eof
   return xs
 
-ptoken :: Parser Token
+ptoken :: Parser (Token, SourcePos)
 ptoken = do
-  t <- ident <|> number <|> qstring <|> character <|> operator
+  p <- getPosition
+  t <- puncEquals <|> punc <|> ident <|> number <|> qstring <|> character <|> operator
   spaces
-  return t
+  return (t, p)
+
+punc :: Parser Token
+punc = foldr1 (<|>) $ map (\(xs, tok) -> string xs >> return tok) puncs
+
+puncEquals :: Parser Token
+puncEquals = do
+  char '='
+  isArrow <- option False $ char '>' >> return True
+  return $ if isArrow then TArrow else TEquals
+
+puncs =
+  [ (".", TDot)
+  , (",", TComma)
+  , (";", TEnd)
+  , ("(", TLParen)
+  , (")", TRParen)
+  , ("{", TLBracket)
+  , ("}", TRBracket)
+  , (":", TColon)
+  ]
+
+keywords =
+  [ "_"
+  , "with"
+  , "if"
+  , "elif"
+  , "else"
+  , "for"
+  , "in"
+  , "while"
+  , "next"
+  , "done"
+  , "return"
+  , "do"
+  , "decide"
+  , "def"
+  , "ns"
+  , "export"
+  , "global"
+  , "import"
+  , "struct"
+  , "union"
+  , "enum"
+  , "mask"
+  , "from"
+  ]
 
 ident :: Parser Token
 ident = do
   x  <- lu
   xs <- many $ lu <|> digit
-  return $ TIdent $ x : xs
+  let xs' = x : xs
+  return $ case xs' `elem` keywords of
+    True  -> TKeyword xs'
+    False -> TIdent xs'
   where
     lu = letter <|> char '_'
 
