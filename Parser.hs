@@ -1,5 +1,4 @@
 
-{- TODO change lexer to recognize keywords separately -}
 {- TODO add loop labels -}
 {- TODO add operator importing -}
 {- TODO add qualified operator references -}
