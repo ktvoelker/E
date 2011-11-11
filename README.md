@@ -19,3 +19,8 @@ To use the parser:
 2. Run `:load Parser` in ghci
 3. Run `parseFile "" "def x = 3;"` in ghci
 
+Dependencies
+------------
+
+* Parsec: run `cabal install parsec`
+
