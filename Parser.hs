@@ -1,10 +1,4 @@
 
-{- TODO add loop labels -}
-{- TODO add operator importing -}
-{- TODO add qualified operator references -}
-{- TODO add some composition operators -}
-{- TODO add literal arrays and struct-likes -}
-
 module Parser where
 
 import Data.Either

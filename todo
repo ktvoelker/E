@@ -1,5 +1,16 @@
 
-Make the ANTLR grammar produce a Java AST value.
+To-Do
+=====
 
-Get a primitive identity pass working in Scala linked against the compiled grammar.
+Grammar
+-------
+Loop labels
+Operator importing
+Qualified operator references
+Some composition operators
+Literal arrays and struct-likes
+
+Test the grammar
+
+Write the later passes
 
