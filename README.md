@@ -10,12 +10,12 @@ least for simple inputs.
 To use the lexer:
 
 1. Run `ghci`
-2. Run `:load Lexer` in `ghci`
-3. Run `tokenize "" "some tokens"` in `ghci`
+2. Run `:load Lexer` in ghci
+3. Run `tokenize "" "some tokens"` in ghci
 
 To use the parser:
 
 1. Run `ghci`
-2. Run `:load Parser` in `ghci`
-3. Run `parseFile "" "def x = 3;"` in `ghci`
+2. Run `:load Parser` in ghci
+3. Run `parseFile "" "def x = 3;"` in ghci
 
