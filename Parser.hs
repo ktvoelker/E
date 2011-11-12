@@ -1,6 +1,7 @@
 
 module Parser where
 
+import Control.Monad
 import Data.Either
 import Text.ParserCombinators.Parsec
 import Text.Parsec.Prim
@@ -45,14 +46,16 @@ type FnBody = Either Block Expr
 
 type Block = [Stmt]
 
+type LoopLabel = Maybe SimpleName
+
 data Stmt =
     SExpr Expr
   | SDef SimpleName Expr
   | SIf (Maybe Expr) Expr Block [(Expr, Block)] (Maybe Block)
-  | SWhile Expr Block (Maybe Block)
-  | SFor SimpleName Type Expr Block (Maybe Block)
-  | SNext
-  | SDone
+  | SWhile LoopLabel Expr Block (Maybe Block)
+  | SFor LoopLabel SimpleName Expr Block (Maybe Block)
+  | SNext LoopLabel
+  | SDone LoopLabel
   | SReturn (Maybe Expr)
   | SDecide [Expr] [([Maybe Expr], Block)]
   | SDo Block
@@ -318,13 +321,19 @@ new = do
 block :: P Block
 block = brackets $ many stmt
 
+loopControl kw f = do
+  isKw kw
+  a <- optionMaybe simpleName
+  end
+  return $ f a
+
 stmt, def, cond, while, for, ret, decide, exec :: P Stmt
 stmt =
   def <|> cond <|> while <|> for <|> ret <|> decide <|> exec
   <|>
-  (isKw "next" >> end >> return SNext)
+  loopControl "next" SNext
   <|>
-  (isKw "done" >> end >> return SDone)
+  loopControl "done" SDone
   <|>
   (end >> return SEmpty)
   <|>
@@ -344,12 +353,15 @@ exec = do
   b <- block
   return $ SDo b
 
+loopLabel = optionMaybe $ isTok TAt >> simpleName
+
 while = do
   isKw "while"
+  a <- loopLabel
   e <- expr
   b <- block
   n <- next
-  return $ SWhile e b n
+  return $ SWhile a e b n
 
 {-
   The for-each loop expression must be of a type for which all the necessary
@@ -357,16 +369,15 @@ while = do
 -}
 for = do
   isKw "for"
+  a <- loopLabel
   lParen
   v <- simpleName
-  colon
-  t <- expr
   isKw "in"
   e <- expr
   rParen
   b <- block
   n <- next
-  return $ SFor v t e b n
+  return $ SFor (a `mplus` Just v) v e b n
 
 next :: P (Maybe Block)
 next = optionMaybe $ isKw "next" >> block

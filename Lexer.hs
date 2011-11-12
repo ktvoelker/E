@@ -23,6 +23,7 @@ data Token =
   | TLBracket
   | TRBracket
   | TColon
+  | TAt
   deriving (Eq, Show)
 
 tokenize :: SourceName -> String -> Either ParseError [(Token, SourcePos)]
@@ -60,6 +61,7 @@ puncs =
   , ("{", TLBracket)
   , ("}", TRBracket)
   , (":", TColon)
+  , ("@", TAt)
   ]
 
 keywords =
@@ -209,6 +211,6 @@ hex_to_int 'F' = 15
 
 operator :: Parser Token
 operator = do
-  xs <- many1 $ oneOf "~!@$%^&*-+=|/<>?"
+  xs <- many1 $ oneOf "~!$%^&*-+=|/<>?"
   return $ TOper xs
 

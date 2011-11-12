@@ -4,13 +4,17 @@ To-Do
 
 Grammar
 -------
-Loop labels
 Operator importing
 Qualified operator references
 Some composition operators
 Literal arrays and struct-likes
+Unsafe casts
+Comments (including inline documentation)
 
 Test the grammar
 
-Write the later passes
+Figure out which built-ins behave like functions (and can thus be exposed as library
+functions) and which have special semantics
+
+Implement the compiler
 
