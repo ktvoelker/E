@@ -4,10 +4,7 @@ To-Do
 
 Grammar
 -------
-Operator importing
-Qualified operator references
-Some composition operators
-Literal arrays and struct-likes
+Literal arrays
 Unsafe casts
 Comments (including inline documentation)
 

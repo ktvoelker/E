@@ -92,8 +92,14 @@ colon = isTok TColon
 equals = isTok TEquals
 arrow = isTok TArrow
 
+simpleOrOperName :: P SimpleName
+simpleOrOperName = simpleName <|> (operName >>= return . SimpleName)
+
 name :: P Name
-name = sepBy1 simpleName dot >>= return . Name
+name = do
+  x <- simpleName
+  xs <- many $ dot >> simpleOrOperName
+  return $ Name $ x : xs
 
 delimit :: P start -> P end -> P a -> P a
 delimit start end body = do
@@ -203,7 +209,9 @@ data Prec =
   deriving (Bounded, Enum, Eq, Ord, Show)
 
 precedence =
-  [ ("<=>", PCompare)
+  [ (">=>", PCompose)
+  , ("<=<", PCompose)
+  , ("<=>", PCompare)
   , ("==",  PCompare)
   , ("!=",  PCompare)
   , ("<=",  PCompare)
@@ -224,11 +232,15 @@ precedence =
   , ("^",   PExp)
   ]
 
-oper :: P (Prec, Expr)
-oper = do
-  o <- tok $ \t -> case t of
+operName :: P String
+operName =
+  tok $ \t -> case t of
     TOper xs -> Just xs
     _ -> Nothing
+
+oper :: P (Prec, Expr)
+oper = do
+  o <- operName
   let p = maybe PUser id $ lookup o precedence
   return (p, EName $ Name [SimpleName o])
 
@@ -475,7 +487,7 @@ nsElem = parseEither imp nsDef
 imp :: P Import
 imp = do
   isKw "import"
-  ns <- sepEndBy simpleName comma
+  ns <- sepEndBy simpleOrOperName comma
   isKw "from"
   n  <- name
   end
