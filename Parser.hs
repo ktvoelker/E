@@ -37,6 +37,7 @@ data Expr =
   | EChar Char
   | EString String
   | EName Name
+  | EArray [Expr]
   | ENew Name [Expr]
   | EFnValue [Param] Type FnBody
   | EFnType [Param] Type
@@ -50,7 +51,7 @@ type LoopLabel = Maybe SimpleName
 
 data Stmt =
     SExpr Expr
-  | SDef SimpleName Expr
+  | SDef Bool SimpleName Expr
   | SIf (Maybe Expr) Expr Block [(Expr, Block)] (Maybe Block)
   | SWhile LoopLabel Expr Block (Maybe Block)
   | SFor LoopLabel SimpleName Expr Block (Maybe Block)
@@ -80,14 +81,14 @@ simpleName =
     TIdent xs -> Just $ SimpleName xs
     _ -> Nothing
 
-end, dot, comma, lParen, rParen, lBracket, rBracket, colon, equals, arrow :: P ()
+end, dot, comma, lParen, rParen, lBrace, rBrace, colon, equals, arrow :: P ()
 end = isTok TEnd
 dot = isTok TDot
 comma = isTok TComma
 lParen = isTok TLParen
 rParen = isTok TRParen
-lBracket = isTok TLBracket
-rBracket = isTok TRBracket
+lBrace = isTok TLBrace
+rBrace = isTok TRBrace
 colon = isTok TColon
 equals = isTok TEquals
 arrow = isTok TArrow
@@ -111,8 +112,8 @@ delimit start end body = do
 parens :: P a -> P a
 parens = delimit lParen rParen
 
-brackets :: P a -> P a
-brackets = delimit lBracket rBracket
+braces :: P a -> P a
+braces = delimit lBrace rBrace
 
 params :: P [Param]
 params = parens $ sepEndBy param comma
@@ -139,7 +140,7 @@ typeDef = do
   as <- option [] arguments
   n  <- simpleName
   ps <- option [] params
-  es <- brackets $ sepEndBy structElem comma
+  es <- braces $ sepEndBy structElem comma
   end
   return $ TypeDef k as n ps es
 
@@ -291,7 +292,7 @@ applyPrec h ts = EApp o [left', right']
     right' = applyPrec e rTail
 
 literal :: P Expr
-literal = tokLiteral <|> new <|> fn
+literal = tokLiteral <|> array <|> new <|> fn
 
 tokLiteral :: P Expr
 tokLiteral = tok $ \t -> case t of
@@ -300,6 +301,15 @@ tokLiteral = tok $ \t -> case t of
   TChar c    -> Just $ EChar c
   TString xs -> Just $ EString xs
   _          -> Nothing
+
+lBracket = isTok TLBracket
+
+rBracket = isTok TRBracket
+
+brackets = delimit lBracket rBracket
+
+array :: P Expr
+array = brackets $ sepEndBy expr comma >>= return . EArray
 
 fn :: P Expr
 fn = do
@@ -331,7 +341,7 @@ new = do
   return $ ENew n as
 
 block :: P Block
-block = brackets $ many stmt
+block = braces $ many stmt
 
 loopControl kw f = do
   isKw kw
@@ -339,9 +349,9 @@ loopControl kw f = do
   end
   return $ f a
 
-stmt, def, cond, while, for, ret, decide, exec :: P Stmt
+stmt, localDef, cond, while, for, ret, decide, exec :: P Stmt
 stmt =
-  def <|> cond <|> while <|> for <|> ret <|> decide <|> exec
+  localDef <|> cond <|> while <|> for <|> ret <|> decide <|> exec
   <|>
   loopControl "next" SNext
   <|>
@@ -412,11 +422,17 @@ cond = do
   e <- optionMaybe $ isKw "else" >> block
   return $ SIf w t b elifs e
 
+localDef = do
+  ms     <- many $ isKw' "closed"
+  let c = "closed" `elem` ms
+  (n, e) <- def
+  return $ SDef c n e
+
 def = do
   isKw "def"
   n <- simpleName
   e <- defTail
-  return $ SDef n e
+  return (n, e)
 
 defTail =
   do
@@ -444,7 +460,7 @@ fnBodyWithEnd =
 decide = do
   isKw "decide"
   as <- arguments
-  os <- brackets $ many decision
+  os <- braces $ many decision
   return $ SDecide as os
 
 exprOrBlock =
@@ -505,6 +521,6 @@ nsDef = do
   ms <- many $ isKw' "export" <|> isKw' "global"
   let e = "export" `elem` ms
   let g = "global" `elem` ms
-  SDef n v <- def
+  (n, v) <- def
   return $ NsDef e g n v
 

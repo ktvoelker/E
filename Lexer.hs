@@ -24,6 +24,8 @@ data Token =
   | TRBracket
   | TColon
   | TAt
+  | TLBrace
+  | TRBrace
   deriving (Eq, Show)
 
 tokenize :: SourceName -> String -> Either ParseError [(Token, SourcePos)]
@@ -58,10 +60,12 @@ puncs =
   , (";", TEnd)
   , ("(", TLParen)
   , (")", TRParen)
-  , ("{", TLBracket)
-  , ("}", TRBracket)
+  , ("{", TLBrace)
+  , ("}", TRBrace)
   , (":", TColon)
   , ("@", TAt)
+  , ("[", TLBracket)
+  , ("]", TRBracket)
   ]
 
 keywords =
@@ -88,6 +92,7 @@ keywords =
   , "enum"
   , "mask"
   , "from"
+  , "closed"
   ]
 
 ident :: Parser Token
