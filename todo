@@ -2,14 +2,10 @@
 To-Do
 =====
 
-Grammar
--------
-Comments (including inline documentation)
-
-Test the grammar
-
 Figure out which built-ins behave like functions (and can thus be exposed as library
 functions) and which have special semantics
 
 Implement the compiler
+
+Implement the documentation generator
 

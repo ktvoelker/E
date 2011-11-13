@@ -28,22 +28,64 @@ data Token =
   | TRBrace
   deriving (Eq, Show)
 
-tokenize :: SourceName -> String -> Either ParseError [(Token, SourcePos)]
+tokenize :: SourceName -> String -> Either ParseError [(Token, SourcePos, Maybe String)]
 tokenize = parse file
 
-file :: Parser [(Token, SourcePos)]
+ignorables = many $ (space >> return ()) <|> (comment >> return ())
+
+file :: Parser [(Token, SourcePos, Maybe String)]
 file = do
-  spaces
+  ignorables
   xs <- many ptoken
   eof
   return xs
 
-ptoken :: Parser (Token, SourcePos)
+trim = reverse . dropWhile isSpace . reverse . dropWhile isSpace
+
+bool :: Parser a -> Parser Bool
+bool = option False . (>> return True)
+
+lineComment = do
+  string "//"
+  d  <- bool $ char '/'
+  xs <- many $ noneOf "\n"
+  (char '\n' >> return ()) <|> eof
+  return $ trim xs
+
+blockComment = do
+  string "/*"
+  d <- bool $ char '*'
+  xs <- blockCommentBody
+  string "*/"
+  return $ trim xs
+
+blockCommentBody = do
+  xs     <- many $ noneOf "/*"
+  atEnd  <- bool $ lookAhead $ string "*/"
+  atNest <- bool $ lookAhead $ string "/*"
+  case (atEnd, atNest) of
+    (False, False) -> do
+      y  <- anyChar
+      ys <- blockCommentBody
+      return $ xs ++ y : ys
+    (True, False)  -> do
+      return xs
+    (False, True)  -> do
+      ys <- blockComment
+      zs <- blockCommentBody
+      return $ xs ++ ys ++ zs
+    (True, True)   -> fail "The impossible happened in blockCommentBody."
+
+comment = lineComment <|> blockComment
+
+ptoken :: Parser (Token, SourcePos, Maybe String)
 ptoken = do
   p <- getPosition
   t <- puncEquals <|> punc <|> ident <|> number <|> qstring <|> character <|> operator
   spaces
-  return (t, p)
+  c <- optionMaybe comment
+  ignorables
+  return (t, p, c)
 
 punc :: Parser Token
 punc = foldr1 (<|>) $ map (\(xs, tok) -> string xs >> return tok) puncs

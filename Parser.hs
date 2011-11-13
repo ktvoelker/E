@@ -1,4 +1,5 @@
 
+{-# LANGUAGE TupleSections #-}
 module Parser where
 
 import Control.Monad
@@ -11,7 +12,7 @@ import Lexer
 parseFile :: SourceName -> String -> Either ParseError Namespace
 parseFile name text = either Left (parse file name) $ tokenize name text
 
-type P = Parsec [(Token, SourcePos)] ()
+type P = Parsec [(Token, SourcePos, Maybe String)] ()
 
 data SimpleName = SimpleName String deriving (Eq, Show)
 
@@ -70,7 +71,10 @@ data NsDef = NsDef Bool Bool SimpleName Expr deriving (Eq, Show)
 data Import = Import Name (Maybe [SimpleName]) deriving (Eq, Show)
 
 tok :: (Token -> Maybe a) -> P a
-tok p = token (show . fst) snd (p . fst)
+tok = fmap fst . tokWithComment
+
+tokWithComment :: (Token -> Maybe a) -> P (a, Maybe String)
+tokWithComment p = token (show . fst3) snd3 (\t -> fmap (, thd3 t) $ p $ fst3 t)
 
 isTok :: Token -> P ()
 isTok t = tok $ \t' -> if t == t' then Just () else Nothing
