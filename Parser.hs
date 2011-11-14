@@ -175,24 +175,6 @@ exprHead :: P Expr
 exprHead =
   literal
   <|>
-{-
-  Hard-wird names:
-
-	Applied to values:
-  length (get length of array)
-  tag (get tag value of union)
-  ref (increment reference count)
-  unref (decrement reference count)
-  const (safe cast from ptr to const)
-  cast (unsafe cast to any specified type)
-  first, last, iteration (get information about loop iterations)
-  
-  Applied to types:
-  ptr (pointer, also used for arrays)
-  const (like ptr, but read-only)
-  tag (get tag type of union)
-  and all the primitive types
--}
   (name >>= return . EName)
   <|>
   unaryOpExpr

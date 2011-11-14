@@ -1,0 +1,61 @@
+
+Built-in types
+==============
+
+Bool
+  Normal definition and construction
+  Must be the type of test expressions
+
+Char
+  Normal definition (as an enum) and construction
+  Can also be constructed via special forms (char literals)
+
+Int
+UInt
+  System-dependent aliases of parameterized Int and UInt
+
+Int(bits : UInt(8))
+UInt(bits : UInt(8))
+  Special definition
+  Construction via literals
+
+Array(T)
+  Alias of Array(T, 0, maxValue(UInt(32)))
+
+Array(T, length : UInt(32))
+  Alias of Array(T, length, length)
+
+Array(T, minLength : UInt(32), maxLength : UInt(32))
+  Special definition
+  Normal construction
+  Construction via literals
+  When a test expression includes a comparison of the length of an Array-typed
+  def, in any branch controlled by that test expression where the truth of the
+  comparison is statically known, there is an implicit def with the same name
+  as the def used in the comparison. The implicit def's value is the same as
+  the comparison def, but its type is refined based on length information
+  obtained from the comparison.
+
+Built-in functions
+==================
+
+length(T, a : Array(T)) : UInt(32)
+length(T, a : Array(T, length : UInt(32))) : UInt(32)
+
+
+Returns a value:
+  length (get length of array)
+  tag (get tag value of union)
+  ref (increment reference count)
+  unref (decrement reference count)
+  const (safe cast from ptr to const)
+  cast (unsafe cast to any specified type)
+  first, last, iteration (get information about loop iterations)
+  minValue, maxValue (get min or max value of a numeric type)
+  
+Returns a type:
+  ptr (pointer, also used for arrays)
+  const (like ptr, but read-only)
+  tag (get tag type of union)
+  and all the primitive types
+
