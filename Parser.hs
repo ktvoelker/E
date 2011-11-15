@@ -1,9 +1,6 @@
 
 {-# LANGUAGE TupleSections #-}
-module Parser
-  ( module AST
-  , parseFile
-  ) where
+module Parser (phase) where
 
 import Control.Monad
 import Data.Either
@@ -12,6 +9,12 @@ import Text.Parsec.Prim
 
 import AST
 import Lexer
+import Message
+
+phase :: String -> String -> E (Maybe Namespace)
+phase name text = case parseFile name text of
+  Left e     -> err (show e) >> return Nothing
+  Right file -> return $ Just file
 
 parseFile :: SourceName -> String -> Either ParseError Namespace
 parseFile name text = either Left (parse file name) $ tokenize name text

@@ -2,10 +2,6 @@
 To-Do
 =====
 
-Get the record magic library and install it
-
-Convert the types in AST to be magic records
-
 Implement the compiler
 
 Implement the documentation generator

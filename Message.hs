@@ -24,7 +24,7 @@ instance Show Message where
     . ("  " ++)
     . (text msg ++)
 
-data Level = Info | Warning | Error deriving (Bounded, Enum, Eq, Ord)
+data Level = Info | Warning | Error deriving (Bounded, Enum, Eq, Ord, Read)
 
 levelIndicators =
   [ (Info,    " I")
