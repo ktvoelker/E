@@ -1,74 +1,20 @@
 
 {-# LANGUAGE TupleSections #-}
-module Parser where
+module Parser
+  ( module AST
+  , parseFile
+  ) where
 
 import Control.Monad
 import Data.Either
-import Text.ParserCombinators.Parsec
+import Text.Parsec
 import Text.Parsec.Prim
 
+import AST
 import Lexer
 
 parseFile :: SourceName -> String -> Either ParseError Namespace
 parseFile name text = either Left (parse file name) $ tokenize name text
-
-type P = Parsec [(Token, SourcePos, Maybe String)] ()
-
-data SimpleName = SimpleName String deriving (Eq, Show)
-
-data Name = Name [SimpleName] deriving (Eq, Show)
-
-data Param =
-    TypeParam SimpleName
-  | ValueParam SimpleName Type
-  deriving (Eq, Show)
-
-data Kind = Struct | Union | Enum | Mask deriving (Eq, Show)
-
-data TypeDef = TypeDef Kind [Expr] SimpleName [Param] [StructElem] deriving (Eq, Show)
-
-data StructElem = StructElem SimpleName (Maybe Type) (Maybe Expr) deriving (Eq, Show)
-
-type Type = Expr
-
-data Expr =
-    EApp Expr [Expr]
-  | EInt Integer
-  | EFloat Double
-  | EChar Char
-  | EString String
-  | EName Name
-  | EArray [Expr]
-  | ENew Name [Expr]
-  | EFnValue [Param] Type FnBody
-  | EFnType [Param] Type
-  deriving (Eq, Show)
-
-type FnBody = Either Block Expr
-
-type Block = [Stmt]
-
-type LoopLabel = Maybe SimpleName
-
-data Stmt =
-    SExpr Expr
-  | SDef Bool SimpleName Expr
-  | SIf (Maybe Expr) Expr Block [(Expr, Block)] (Maybe Block)
-  | SWhile LoopLabel Expr Block (Maybe Block)
-  | SFor LoopLabel SimpleName Expr Block (Maybe Block)
-  | SNext LoopLabel
-  | SDone LoopLabel
-  | SReturn (Maybe Expr)
-  | SDecide [Expr] [([Maybe Expr], Block)]
-  | SDo Block
-  | SEmpty
-  deriving (Eq, Show)
-
-data Namespace = Namespace Name [Import] [NsDef] deriving (Eq, Show)
-
-data NsDef = NsDef Bool Bool SimpleName Expr deriving (Eq, Show)
-
-data Import = Import Name (Maybe [SimpleName]) deriving (Eq, Show)
 
 tok :: (Token -> Maybe a) -> P a
 tok = fmap fst . tokWithComment
@@ -138,15 +84,24 @@ param = do
   In an enum or mask, any element may have an initial value, but the initial
   values must all be valid.
 -}
-typeDef :: P TypeDef
-typeDef = do
+nsTypeDef :: P NsDef
+nsTypeDef = do
   k  <- kind
   as <- option [] arguments
   n  <- simpleName
   ps <- option [] params
   es <- braces $ sepEndBy structElem comma
   end
-  return $ TypeDef k as n ps es
+  return $ NsTypeDef k as n ps es
+
+nsTypeAlias :: P NsDef
+nsTypeAlias = do
+  isKw "alias"
+  n  <- simpleName
+  ps <- option [] params
+  isTok TEquals
+  t  <- expr
+  return $ NsTypeAlias n ps t
 
 isKw :: String -> P ()
 isKw = isTok . TKeyword
@@ -486,6 +441,8 @@ parseEither a b = (a >>= return . Left) <|> (b >>= return . Right)
 nsElem :: P (Either Import NsDef)
 nsElem = parseEither imp nsDef
 
+nsDef = nsTypeDef <|> nsTypeAlias <|> nsValueDef
+
 imp :: P Import
 imp = do
   isKw "import"
@@ -502,11 +459,11 @@ isKw' xs = tok $ \t -> case t of
   TKeyword ys -> if xs == ys then Just xs else Nothing
   _         -> Nothing
 
-nsDef :: P NsDef
-nsDef = do
+nsValueDef :: P NsDef
+nsValueDef = do
   ms <- many $ isKw' "export" <|> isKw' "global"
   let e = "export" `elem` ms
   let g = "global" `elem` ms
   (n, v) <- def
-  return $ NsDef e g n v
+  return $ NsValueDef e g n v
 

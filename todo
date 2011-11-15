@@ -2,10 +2,6 @@
 To-Do
 =====
 
-Add type alias definitions to the grammar
-
-  Allow aliases to take static parameters of their own
-
 Figure out which built-ins behave like functions (and can thus be exposed as library
 functions) and which have special semantics
 

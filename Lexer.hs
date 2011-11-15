@@ -135,6 +135,7 @@ keywords =
   , "mask"
   , "from"
   , "closed"
+  , "alias"
   ]
 
 ident :: Parser Token
