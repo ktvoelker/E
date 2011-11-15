@@ -2,6 +2,9 @@
 Built-in types
 ==============
 
+Void
+  Normal definition and construction
+
 Bool
   Normal definition and construction
   Must be the type of test expressions
@@ -19,13 +22,19 @@ UInt(bits : UInt(8))
   Special definition
   Construction via literals
 
-Array(T)
-  Alias of Array(T, 0, maxValue(UInt(32)))
+Ptr(T)
+  Alias of Array(T, False, 1, 1)
 
-Array(T, length : UInt(32))
-  Alias of Array(T, length, length)
+Const(T)
+  Alias of Array(T, True, 1, 1)
 
-Array(T, minLength : UInt(32), maxLength : UInt(32))
+Array(T, const : Bool)
+  Alias of Array(T, const, 0, maxValue(UInt(32)))
+
+Array(T, const : Bool, length : UInt(32))
+  Alias of Array(T, const, length, length)
+
+Array(T, const : Bool, minLength : UInt(32), maxLength : UInt(32))
   Special definition
   Normal construction
   Construction via literals
@@ -36,26 +45,48 @@ Array(T, minLength : UInt(32), maxLength : UInt(32))
   the comparison def, but its type is refined based on length information
   obtained from the comparison.
 
+Tag(T)
+  Special definition
+  Normal construction (it's an enum, and the members of Tag(T) have the same names as
+  the members of T)
+
+
 Built-in functions
 ==================
 
-length(T, a : Array(T)) : UInt(32)
-length(T, a : Array(T, length : UInt(32))) : UInt(32)
+length(T, a : Array(T, minLength : UInt(32), maxLength : UInt(32))) : UInt(32)
+  Normal type
+  Special definition
+  Normal call
+  Call with special effects in test expressions (see Array type above)
 
+tag(T) : Tag(T)
+  Special type (uses type operator Tag(T))
+  Special definition
+  Special call (parameter T must be a union type)
 
-Returns a value:
-  length (get length of array)
-  tag (get tag value of union)
-  ref (increment reference count)
-  unref (decrement reference count)
-  const (safe cast from ptr to const)
-  cast (unsafe cast to any specified type)
-  first, last, iteration (get information about loop iterations)
-  minValue, maxValue (get min or max value of a numeric type)
-  
-Returns a type:
-  ptr (pointer, also used for arrays)
-  const (like ptr, but read-only)
-  tag (get tag type of union)
-  and all the primitive types
+[un]ref(T, const : Bool, minLength : UInt(32), maxLength : UInt(32),
+        p : Array(T, const, minLength, maxLength)) : Void
+  Normal type
+  Special definition
+  Normal call
+  References in a module make that module unsafe
+
+cast(T, U, value : T) : U
+  Normal type
+  Special definition
+  Normal call
+  References in a module make that module unsafe
+
+minValue(T) : T
+maxValue(T) : T
+  Normal type
+  Special definition
+  Can only be applied to bounded numeric types
+
+new Ptr(T, value : T) : Ptr(T)
+new Const(T, value : T) : Const(T)
+new Array(T, const : Bool, length : UInt(32), value : T)
+         : Array(T, const, length, length)
+  Special case of "new" since Array does not have a normal definition
 
