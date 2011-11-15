@@ -1,0 +1,31 @@
+
+The Compiler
+============
+
+ 1. Local static checks (basic invariants that are logically syntactic)
+
+ 2. Import resolution (find the modules, compile them if necessary, check for symbols)
+
+ 3. Name resolution (fully qualify all names and distinguish different kinds of lookups)
+
+ 4. Type checking, static argument inference, and static function dispatch
+
+    It is an error if there are multiple definitions with the same dynamic parameters
+    and the same number of static parameters.
+
+ 5. Recursive tail call optimization (produce while loops)
+
+ 6. Control simplification (replace imperative control structures with gotos)
+
+ 7. High-level optimization passes
+
+ 8. Conversion to system-independent three-address code
+
+ 9. Mid-level optimization passes
+
+10. Conversion to system assembly
+
+11. Low-level optimization passes
+
+12. Conversion to machine code
+
