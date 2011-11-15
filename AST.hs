@@ -19,18 +19,22 @@ data Param =
 type Type = Expr
 
 data Expr =
-    EApp Expr [Expr]
+    EApp Expr Args
   | EInt Integer
   | EFloat Double
   | EChar Char
   | EString String
   | EName Name
   | EArray [Expr]
-  | ENew Name [Expr]
-  | EFnValue [Param] Type FnBody
-  | EFnType [Param] Type
+  | ENew Name Args
+  | EFnValue Params Type FnBody
+  | EFnType Params Type
   | ELoopInfo LoopInfo SimpleName
   deriving (Eq, Show)
+
+data Args = Args [Expr] [Expr] deriving (Eq, Show)
+
+data Params = Params [Param] [Param] deriving (Eq, Show)
 
 data LoopInfo = LFirst | LLast | LPos | LCount deriving (Eq, Show)
 
@@ -62,7 +66,7 @@ data StructElem = StructElem SimpleName (Maybe Type) (Maybe Expr) deriving (Eq, 
 
 data NsDef =
     NsValueDef Bool Bool SimpleName Expr
-  | NsTypeDef Kind [Expr] SimpleName [Param] [StructElem]
+  | NsTypeDef Kind [Expr] SimpleName Params [StructElem]
   | NsTypeAlias SimpleName [Param] Type
   deriving (Eq, Show)
 

@@ -2,14 +2,6 @@
 To-Do
 =====
 
-Figure out which built-ins behave like functions (and can thus be exposed as library
-functions) and which have special semantics
-
-Define the semantics of static argument inference and function name overloading
-
-  These are somewhat in opposition if overloads are allowed to have differing numbers
-  of parameters.
-
 Implement the compiler
 
 Implement the documentation generator

@@ -65,8 +65,14 @@ parens = delimit lParen rParen
 braces :: P a -> P a
 braces = delimit lBrace rBrace
 
-params :: P [Param]
-params = parens $ sepEndBy param comma
+staticParams = brackets $ sepEndBy param comma
+
+params = do
+  ss <- option [] staticParams
+  ds <- parens $ sepEndBy param comma
+  return $ Params ss ds
+
+optionalParams = option (Params [] []) params
 
 param :: P Param
 param = do
@@ -87,9 +93,9 @@ param = do
 nsTypeDef :: P NsDef
 nsTypeDef = do
   k  <- kind
-  as <- option [] arguments
+  as <- staticArgs
   n  <- simpleName
-  ps <- option [] params
+  ps <- optionalParams
   es <- braces $ sepEndBy structElem comma
   end
   return $ NsTypeDef k as n ps es
@@ -98,7 +104,7 @@ nsTypeAlias :: P NsDef
 nsTypeAlias = do
   isKw "alias"
   n  <- simpleName
-  ps <- option [] params
+  ps <- staticParams
   isTok TEquals
   t  <- expr
   return $ NsTypeAlias n ps t
@@ -124,8 +130,14 @@ structElem = do
   v <- optionMaybe $ equals >> expr
   return $ StructElem n t v
 
-arguments :: P [Expr]
-arguments = parens $ sepEndBy expr comma
+staticArgs = brackets $ sepEndBy expr comma
+
+dynArgs = parens $ sepEndBy expr comma
+
+arguments = do
+  ss <- option [] staticArgs
+  ds <- dynArgs
+  return $ Args ss ds
 
 loopInfoType :: P LoopInfo
 loopInfoType = kwTable
@@ -207,9 +219,9 @@ unaryOpExpr :: P Expr
 unaryOpExpr = do
   (_, o) <- oper
   e <- expr
-  return $ EApp o [e]
+  return $ EApp o $ Args [] [e]
 
-type ExprTail = Either [Expr] (Prec, Expr, Expr)
+type ExprTail = Either Args (Prec, Expr, Expr)
 
 exprTail :: P ExprTail
 exprTail =
@@ -242,7 +254,7 @@ thd3 (_, _, x) = x
 
 applyPrec :: Expr -> [(Prec, Expr, Expr)] -> Expr
 applyPrec h [] = h
-applyPrec h ts = EApp o [left', right']
+applyPrec h ts = EApp o $ Args [] [left', right']
   where
     minPrec = minimum $ map fst3 ts
     (left, ((_, o, e) : rTail)) = span ((< minPrec) . fst3) ts
@@ -275,7 +287,7 @@ fn = do
   t  <- fnValueTail <|> fnTypeTail
   return $ t ps
 
-fnValueTail, fnTypeTail :: P ([Param] -> Expr)
+fnValueTail, fnTypeTail :: P (Params -> Expr)
 
 fnValueTail = do
   colon
@@ -404,7 +416,7 @@ defTail =
     colon
     t  <- expr
     equals
-    b  <- fnBody
+    b  <- fnBodyWithEnd
     return $ EFnValue ps t b
 
 fnBodyWithEnd =
@@ -417,7 +429,7 @@ fnBodyWithEnd =
 
 decide = do
   isKw "decide"
-  as <- arguments
+  as <- dynArgs
   os <- braces $ many decision
   return $ SDecide as os
 
