@@ -136,6 +136,10 @@ keywords =
   , "from"
   , "closed"
   , "alias"
+  , "first"
+  , "last"
+  , "iteration"
+  , "iterations"
   ]
 
 ident :: Parser Token

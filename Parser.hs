@@ -106,15 +106,16 @@ nsTypeAlias = do
 isKw :: String -> P ()
 isKw = isTok . TKeyword
 
+kwTable :: [(String, a)] -> P a
+kwTable = foldr1 (<|>) . map (\(k, v) -> isKw k >> return v)
+
 kind :: P Kind
-kind =
-  (isKw "struct" >> return Struct)
-  <|>
-  (isKw "union"  >> return Union)
-  <|>
-  (isKw "enum"   >> return Enum)
-  <|>
-  (isKw "mask"   >> return Mask)
+kind = kwTable
+  [ ("struct", Struct)
+  , ("union",  Union)
+  , ("enum",   Enum)
+  , ("mask",   Mask)
+  ]
 
 structElem :: P StructElem
 structElem = do
@@ -126,9 +127,25 @@ structElem = do
 arguments :: P [Expr]
 arguments = parens $ sepEndBy expr comma
 
+loopInfoType :: P LoopInfo
+loopInfoType = kwTable
+  [ ("iterations", LCount)
+  , ("iteration",  LPos)
+  , ("first",      LFirst)
+  , ("last",       LLast)
+  ]
+
+loopInfo :: P Expr
+loopInfo = do
+  i <- loopInfoType
+  n <- simpleName
+  return $ ELoopInfo i n
+
 exprHead :: P Expr
 exprHead =
   literal
+  <|>
+  loopInfo
   <|>
   (name >>= return . EName)
   <|>

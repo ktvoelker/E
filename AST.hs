@@ -29,7 +29,10 @@ data Expr =
   | ENew Name [Expr]
   | EFnValue [Param] Type FnBody
   | EFnType [Param] Type
+  | ELoopInfo LoopInfo SimpleName
   deriving (Eq, Show)
+
+data LoopInfo = LFirst | LLast | LPos | LCount deriving (Eq, Show)
 
 type FnBody = Either Block Expr
 
