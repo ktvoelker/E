@@ -2,6 +2,8 @@
 To-Do
 =====
 
+Figure out a way to keep AST nodes annotated with location information
+
 Implement the compiler
 
 Implement the documentation generator

@@ -34,7 +34,11 @@ data Expr =
 
 data Args = Args [Expr] [Expr] deriving (Eq, Show)
 
-data Params = Params [Param] [Param] deriving (Eq, Show)
+data Params =
+  Params
+  { pStatics  :: [Param]
+  , pDynamics :: [Param]
+  } deriving (Eq, Show)
 
 data LoopInfo = LFirst | LLast | LPos | LCount deriving (Eq, Show)
 
@@ -62,13 +66,37 @@ data Namespace = Namespace Name [Import] [NsDef] deriving (Eq, Show)
 
 data Kind = Struct | Union | Enum | Mask deriving (Eq, Show)
 
-data StructElem = StructElem SimpleName (Maybe Type) (Maybe Expr) deriving (Eq, Show)
+data StructElem =
+  StructElem
+  { seName :: SimpleName
+  , seType :: (Maybe Type)
+  , seInit :: (Maybe Expr)
+  } deriving (Eq, Show)
 
 data NsDef =
-    NsValueDef Bool Bool SimpleName Expr
-  | NsTypeDef Kind [Expr] SimpleName Params [StructElem]
-  | NsTypeAlias SimpleName [Param] Type
+    NsValueDef
+    { vdExport :: Bool
+    , vdGlobal :: Bool
+    , vdName   :: SimpleName
+    , vdValue  :: Expr
+    }
+  | NsTypeDef
+    { tdKind   :: Kind
+    , tdArgs   :: [Expr]
+    , tdName   :: SimpleName
+    , tdParams :: Params
+    , tdElems  :: [StructElem]
+    }
+  | NsTypeAlias
+    { taName   :: SimpleName
+    , taParams :: [Param]
+    , taType   :: Type
+    }
   deriving (Eq, Show)
 
-data Import = Import Name (Maybe [SimpleName]) deriving (Eq, Show)
+data Import =
+  Import
+  { iFrom  :: Name
+  , iNames :: (Maybe [SimpleName])
+  } deriving (Eq, Show)
 
