@@ -4,16 +4,9 @@ module AST where
 import Text.Parsec
 
 import Lexer
+import Location
 
 type P = Parsec [(Token, SourcePos, Maybe String)] ()
-
-data L a = L
-  { loc :: SourcePos
-  , val :: a
-  } deriving (Eq, Show)
-
-vals :: (Functor f) => f (L a) -> f a
-vals = fmap val
 
 data SimpleName = SimpleName String deriving (Eq, Show)
 
