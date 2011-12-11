@@ -14,7 +14,7 @@ module Message
 
 import Control.Monad.Writer
 
-type E a = Writer [Message] a
+type E = Writer [Message]
 
 data Message = Message { level :: Level, text :: String }
 
