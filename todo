@@ -2,7 +2,7 @@
 To-Do
 =====
 
-Figure out a way to keep AST nodes annotated with location information
+Fix Parser.squashApps and Parser.applyPrec
 
 Implement the compiler
 

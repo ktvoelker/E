@@ -20,6 +20,9 @@ data L a = L
   , loc :: SourcePos
   } deriving (Eq, Show)
 
+instance Functor L where
+  fmap f (L val loc) = L (f val) loc
+
 vals :: (Functor f) => f (L a) -> f a
 vals = fmap val
 

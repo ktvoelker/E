@@ -9,6 +9,7 @@ import Text.Parsec.Prim
 
 import AST
 import Lexer
+import Location
 import Message
 
 phase :: String -> String -> E (Maybe Namespace)
@@ -49,10 +50,16 @@ arrow = isTok TArrow
 simpleOrOperName :: P SimpleName
 simpleOrOperName = simpleName <|> (operName >>= return . SimpleName)
 
+located :: P a -> P (L a)
+located parser = do
+  ((_, loc, _) : _) <- getInput
+  val <- parser
+  return $ L val loc
+
 name :: P Name
 name = do
-  x <- simpleName
-  xs <- many $ dot >> simpleOrOperName
+  x <- located simpleName
+  xs <- many $ dot >> located simpleOrOperName
   return $ Name $ x : xs
 
 delimit :: P start -> P end -> P a -> P a
@@ -68,11 +75,11 @@ parens = delimit lParen rParen
 braces :: P a -> P a
 braces = delimit lBrace rBrace
 
-staticParams = brackets $ sepEndBy param comma
+staticParams = brackets $ sepEndBy (located param) comma
 
 params = do
   ss <- option [] staticParams
-  ds <- parens $ sepEndBy param comma
+  ds <- parens $ sepEndBy (located param) comma
   return $ Params ss ds
 
 optionalParams = option (Params [] []) params
@@ -97,7 +104,7 @@ nsTypeDef :: P NsDef
 nsTypeDef = do
   k  <- kind
   as <- staticArgs
-  n  <- simpleName
+  n  <- located simpleName
   ps <- optionalParams
   es <- braces $ sepEndBy structElem comma
   end
@@ -106,7 +113,7 @@ nsTypeDef = do
 nsTypeAlias :: P NsDef
 nsTypeAlias = do
   isKw "alias"
-  n  <- simpleName
+  n  <- located simpleName
   ps <- staticParams
   isTok TEquals
   t  <- expr
@@ -128,7 +135,7 @@ kind = kwTable
 
 structElem :: P StructElem
 structElem = do
-  n <- simpleName
+  n <- located simpleName
   t <- optionMaybe $ colon >> expr
   v <- optionMaybe $ equals >> expr
   return $ StructElem n t v
@@ -153,18 +160,18 @@ loopInfoType = kwTable
 loopInfo :: P Expr
 loopInfo = do
   i <- loopInfoType
-  n <- simpleName
+  n <- located simpleName
   return $ ELoopInfo i n
 
-exprHead :: P Expr
+-- exprHead :: P Expr
 exprHead =
-  literal
+  located literal
   <|>
-  loopInfo
+  located loopInfo
   <|>
-  (name >>= return . EName)
+  located (name >>= return . EName)
   <|>
-  unaryOpExpr
+  located unaryOpExpr
   <|>
   parens expr
 
@@ -212,11 +219,11 @@ operName =
     TOper xs -> Just xs
     _ -> Nothing
 
-oper :: P (Prec, Expr)
+-- oper :: P (Prec, Expr)
 oper = do
-  o <- operName
-  let p = maybe PUser id $ lookup o precedence
-  return (p, EName $ Name [SimpleName o])
+  o <- located operName
+  let p = maybe PUser id $ lookup (val o) precedence
+  return (p, L (EName $ Name [fmap SimpleName o]) $ loc o)
 
 unaryOpExpr :: P Expr
 unaryOpExpr = do
@@ -224,7 +231,7 @@ unaryOpExpr = do
   e <- expr
   return $ EApp o $ Args [] [e]
 
-type ExprTail = Either Args (Prec, Expr, Expr)
+type ExprTail = Either Args (Prec, L Expr, L Expr)
 
 exprTail :: P ExprTail
 exprTail =
@@ -235,14 +242,14 @@ exprTail =
     e <- expr
     return $ Right (p, o, e)
 
-expr :: P Expr
+-- expr :: P Expr
 expr = do
   h  <- exprHead
   ts <- many exprTail
   let (h', ts') = squashApps h ts
   return $ applyPrec h' ts'
 
-squashApps :: Expr -> [ExprTail] -> (Expr, [(Prec, Expr, Expr)])
+-- squashApps :: Expr -> [ExprTail] -> (Expr, [(Prec, Expr, Expr)])
 squashApps h [] = (h, [])
 squashApps h (Left as : ts) = squashApps (EApp h as) ts
 squashApps h (Right (p, o, e) : ts) = (h, (p, o, e') : ts')
@@ -255,7 +262,7 @@ snd3 (_, x, _) = x
 
 thd3 (_, _, x) = x
 
-applyPrec :: Expr -> [(Prec, Expr, Expr)] -> Expr
+-- applyPrec :: Expr -> [(Prec, Expr, Expr)] -> Expr
 applyPrec h [] = h
 applyPrec h ts = EApp o $ Args [] [left', right']
   where
@@ -299,7 +306,7 @@ fnValueTail = do
   b <- fnBody
   return $ \ps -> EFnValue ps t b
 
-fnBody = (expr >>= return . Right) <|> (block >>= return . Left)
+fnBody = (expr >>= return . fmap Right) <|> (located block >>= return . fmap Left)
 
 fnTypeTail = do
   arrow
@@ -309,16 +316,16 @@ fnTypeTail = do
 new :: P Expr
 new = do
   isKw "new"
-  n  <- name
+  n  <- located name
   as <- arguments
   return $ ENew n as
 
 block :: P Block
-block = braces $ many stmt
+block = braces $ many $ located stmt
 
 loopControl kw f = do
   isKw kw
-  a <- optionMaybe simpleName
+  a <- optionMaybe $ located simpleName
   end
   return $ f a
 
@@ -335,7 +342,7 @@ stmt =
   do
     e <- expr
     end
-    return $ SExpr e
+    return $ SExpr $ val e
 
 ret = do
   isKw "return"
@@ -348,7 +355,7 @@ exec = do
   b <- block
   return $ SDo b
 
-loopLabel = optionMaybe $ isTok TAt >> simpleName
+loopLabel = optionMaybe $ isTok TAt >> located simpleName
 
 while = do
   isKw "while"
@@ -366,7 +373,7 @@ for = do
   isKw "for"
   a <- loopLabel
   lParen
-  v <- simpleName
+  v <- located simpleName
   isKw "in"
   e <- expr
   rParen
@@ -403,7 +410,7 @@ localDef = do
 
 def = do
   isKw "def"
-  n <- simpleName
+  n <- located simpleName
   e <- defTail
   return (n, e)
 
@@ -414,21 +421,21 @@ defTail =
     end
     return e
   <|>
-  do
+  located (do
     ps <- params
     colon
     t  <- expr
     equals
     b  <- fnBodyWithEnd
-    return $ EFnValue ps t b
+    return $ EFnValue ps t b)
 
 fnBodyWithEnd =
   do
     e <- expr
     end
-    return $ Right e
+    return $ fmap Right e
   <|>
-  (block >>= return . Left)
+  (located block >>= return . fmap Left)
 
 decide = do
   isKw "decide"
@@ -442,7 +449,7 @@ exprOrBlock =
   do
     e <- expr
     end
-    return [SExpr e]
+    return [L (SExpr $ val e) $ loc e]
 
 decision = do
   es <- parens $ sepEndBy decisionExpr comma
@@ -457,7 +464,8 @@ decisionExpr =
 
 file :: P Namespace
 file = do
-  n  <- option (Name [SimpleName "Main"]) $ do
+  L { loc = start } <- located $ parserReturn ()
+  n  <- option (Name [L (SimpleName "Main") start]) $ do
     isKw "ns"
     n <- name
     end
@@ -470,17 +478,17 @@ file = do
 parseEither :: P a -> P b -> P (Either a b)
 parseEither a b = (a >>= return . Left) <|> (b >>= return . Right)
 
-nsElem :: P (Either Import NsDef)
-nsElem = parseEither imp nsDef
+-- nsElem :: P (Either Import NsDef)
+nsElem = parseEither (located imp) (located nsDef)
 
 nsDef = nsTypeDef <|> nsTypeAlias <|> nsValueDef
 
-imp :: P Import
+-- imp :: P Import
 imp = do
   isKw "import"
-  ns <- sepEndBy simpleOrOperName comma
+  ns <- sepEndBy (located simpleOrOperName) comma
   isKw "from"
-  n  <- name
+  n  <- located name
   end
   return $ Import n $ case ns of
     [] -> Nothing

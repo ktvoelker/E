@@ -14,7 +14,7 @@ data Name = Name [L SimpleName] deriving (Eq, Show)
 
 data Param =
     TypeParam SimpleName
-  | ValueParam SimpleName Type
+  | ValueParam SimpleName (L Type)
   deriving (Eq, Show)
 
 type Type = Expr
@@ -63,15 +63,15 @@ data Stmt =
   | SEmpty
   deriving (Eq, Show)
 
-data Namespace = Namespace (L Name) [L Import] [L NsDef] deriving (Eq, Show)
+data Namespace = Namespace Name [L Import] [L NsDef] deriving (Eq, Show)
 
 data Kind = Struct | Union | Enum | Mask deriving (Eq, Show)
 
 data StructElem =
   StructElem
   { seName :: L SimpleName
-  , seType :: (Maybe Type)
-  , seInit :: (Maybe Expr)
+  , seType :: (Maybe (L Type))
+  , seInit :: (Maybe (L Expr))
   } deriving (Eq, Show)
 
 data NsDef =
