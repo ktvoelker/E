@@ -249,9 +249,9 @@ expr = do
   let (h', ts') = squashApps h ts
   return $ applyPrec h' ts'
 
--- squashApps :: Expr -> [ExprTail] -> (Expr, [(Prec, Expr, Expr)])
+squashApps :: L Expr -> [ExprTail] -> (L Expr, [(Prec, L Expr, L Expr)])
 squashApps h [] = (h, [])
-squashApps h (Left as : ts) = squashApps (EApp h as) ts
+squashApps h (Left as : ts) = squashApps (L (EApp h as) $ loc h) ts
 squashApps h (Right (p, o, e) : ts) = (h, (p, o, e') : ts')
   where
     (e', ts') = squashApps e ts
@@ -262,9 +262,9 @@ snd3 (_, x, _) = x
 
 thd3 (_, _, x) = x
 
--- applyPrec :: Expr -> [(Prec, Expr, Expr)] -> Expr
+applyPrec :: L Expr -> [(Prec, L Expr, L Expr)] -> L Expr
 applyPrec h [] = h
-applyPrec h ts = EApp o $ Args [] [left', right']
+applyPrec h ts = L (EApp o $ Args [] [left', right']) $ loc left'
   where
     minPrec = minimum $ map fst3 ts
     (left, ((_, o, e) : rTail)) = span ((< minPrec) . fst3) ts

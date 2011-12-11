@@ -2,7 +2,7 @@
 To-Do
 =====
 
-Fix Parser.squashApps and Parser.applyPrec
+Test the location-annotated parser
 
 Implement the compiler
 
